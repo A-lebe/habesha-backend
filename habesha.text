@@ -1,0 +1,12 @@
+// to create a database we use 
+dbconfig  +dbsql(sql database)
+// to create controller.js
+we use backend service,dbconfig, and database sql
+
+auth.js = login serviceor login controller 
+autocontext= auth.js
+frontend endpoint =  backend routes 
+
+frontend  for each jsx = backend services +  frontend  endpoint +  autocontext
+Private route = autocontext
+app.jsx  = autoprovide rap 

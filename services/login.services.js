@@ -1,37 +1,44 @@
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const userService = require("../services/user.services");
 
 const login = async (userData) => {
   try {
-    // Fetch user by email
-    const user = await userService.getUserByEmail(userData.user_email);
+    const user = await userService.findUserByEmail(userData.user_email);
 
-    // If no user is found, return failure response
     if (!user) {
-      return {
-        status: "fail",
-        message: "User not found",
-      };
+      return { status: "fail", message: "User not found" };
     }
 
-    // Compare the provided password with the stored hashed password
     const passwordMatch = await bcrypt.compare(
       userData.user_password_value,
       user.user_password
     );
 
-    // If the password does not match, return failure response
     if (!passwordMatch) {
-      return {
-        status: "fail",
-        message: "Incorrect password",
-      };
+      return { status: "fail", message: "Incorrect password" };
     }
 
-    // If login is successful, return success response with user data
+    // ✅ Create JWT token
+    const token = jwt.sign(
+      {
+        user_id: user.user_id,
+        user_email: user.user_email,
+        user_firstName: user.user_firstName,
+        user_lastName: user.user_lastName,
+        user_role: user.user_role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    // ✅ Return user data + token
     return {
       status: "success",
-      data: user,
+      data: {
+        ...user,
+        user_token: token,
+      },
     };
   } catch (error) {
     console.error("Login Service Error:", error.message);
@@ -42,6 +49,4 @@ const login = async (userData) => {
   }
 };
 
-module.exports = {
-  login,
-};
+module.exports = { login };

@@ -3,34 +3,59 @@ const userService = require("../services/user.services");
 // ✅ Register User
 const registerUser = async (req, res) => {
   try {
-    const { username, firstname, lastname, email, password } = req.body;
+    const { user_firstName, user_lastName, user_email, user_password } = req.body;
 
-    if (!username || !firstname || !lastname || !email || !password) {
+    // ✅ Debug confirmation — frontend payload received
+    console.log("📦 Received registration request:", {
+      user_firstName,
+      user_lastName,
+      user_email,
+      user_password_length: user_password ? user_password.length : 0,
+    });
+
+
+    // 🧩 Validate required fields
+    if (!user_firstName || !user_lastName || !user_email || !user_password) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
+    // 🧠 Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(user_email)) {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    if (password.length < 6) {
+    // 🔒 Validate password length
+    if (user_password.length < 6) {
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
 
-    const result = await userService.createUser({ username, firstname, lastname, email, password });
-    res.status(201).json({ message: "User registered successfully", data: result });
+    // 🗃️ Create user in database
+    const newUser = await userService.createUser({
+       user_firstName,
+       user_lastName,
+       user_email,
+       user_password,
+    });
+
+    res.status(201).json({
+      message: "User registered successfully",
+      data: newUser,
+    });
+
+    console.log("✅ New user registered:", req.body);
   } catch (error) {
-      console.error("error in user registration:", error);
+    console.error("❌ Error in user registration:", error);
     res.status(500).json({ error: error.message || "Internal Server Error" });
   }
 };
 
-// ✅ Login
+// ✅ Login User
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: "Email and password required" });
+    if (!email || !password)
+      return res.status(400).json({ error: "Email and password required" });
 
     const result = await userService.loginUser(email, password);
     if (!result) return res.status(401).json({ error: "Invalid email or password" });
@@ -58,10 +83,18 @@ const updateUser = async (req, res) => {
     const { username, firstname, lastname, email, password } = req.body;
 
     if (!username || !firstname || !lastname || !email) {
-      return res.status(400).json({ error: "All fields except password are required" });
+      return res
+        .status(400)
+        .json({ error: "All fields except password are required" });
     }
 
-    const updated = await userService.updateUser(id, { username, firstname, lastname, email, password });
+    const updated = await userService.updateUser(id, {
+      username,
+      firstname,
+      lastname,
+      email,
+      password,
+    });
     if (!updated) return res.status(404).json({ error: "User not found" });
 
     res.status(200).json({ message: "User updated successfully" });

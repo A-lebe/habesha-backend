@@ -1,10 +1,10 @@
-const loginService = require("../service/login.service");
+const loginService = require("../services/login.services");
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.JWT_SECRET;
 
 async function Login(req, res, next) {
   console.log(req.body);
-  const { user_email, user_password_value } = req.body;
+  const { user_email, user_password_value } = req.body; // frontend 
 
   try {
     // Validate input
@@ -41,7 +41,7 @@ async function Login(req, res, next) {
       user_email: user.data.user_email,
       user_firstName: user.data.user_firstName,
       user_lastName: user.data.user_lastName,
-      user_role: user.data.user_role,
+     
     };
     console.log(payload);
 

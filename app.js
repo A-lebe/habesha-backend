@@ -7,19 +7,18 @@ const port = 1234;
 const bcrypt= require("bcryptjs");
 
 // Load route files
-const Routes = require("./Route/install.route");
+const Routes = require("./Route/index");
 const registerRoute = require("./Route/index");
-const orderRoute = require("./Route/order.route")
-const updateOrder = require("./Route/order.route")
-const deleteOrder = require("./Route/order.route")
-const adressRoute = require("./Route/adress.route")
-const updateAddress = require("./Route/adress.route")
-const deleteAddress = require("./Route/adress.route")     
+
+
+const loginRoute = require("./Route/login.route") 
+const userRoute = require("./Route/");   
 dotenv.config()
 // Middleware Configuration
 app.use(cors()); // Enable CORS for all routes
 
 // Body parsing middleware
+app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -31,14 +30,13 @@ app.use((req, res, next) => {
 });
 
 // Mount routes under /API
-app.use("/API", Routes);
+app.use("/API", userRoute);
  app.use("/API", registerRoute);
-app.use("/API", adressRoute);
-app.use("/API", orderRoute);
-app.use("/API", updateOrder);
-app.use("/API", deleteOrder); 
-app.use("/API", updateAddress);
-app.use("/API", deleteAddress);
+
+app.use("/API", Routes);
+
+app.use("/API/users", userRoute);
+app.use("/api", loginRoute);
 // Error handling middleware (must be after routes)
 // app.js
 app.use((err, req, res, next) => {

@@ -2,15 +2,12 @@ const express = require("express");
 const router = express.Router();
 const userController = require("../controller/user.controller");
 
-// ✅ CRUD Routes
-router.post("/users", userController.registerUser);      // Create
-router.post("/users/login", userController.loginUser);   // Login
-router.get("/users", userController.getAllUsers);        // Read all
-router.put("/users/:id", userController.updateUser);     // Update
-router.delete("/users/:id", userController.deleteUser);  // Delete
+// ✅ Correct Routes (no duplicate /users)
+router.post("/users", userController.registerUser);
+
+router.post("/login", userController.loginUser);
+router.get("/", userController.getAllUsers);
+router.put("/:id", userController.updateUser);
+router.delete("/:id", userController.deleteUser);
 
 module.exports = router;
-
-
-
-
