@@ -1,238 +1,208 @@
+// backend/services/order.service.js
 const db = require("../dbconfig/DBconfig");
 
-// ============================================================
-// 🟩 CREATE ORDER (with address)
-// ============================================================
-async function createOrder(orderData, addressData) {
-  try {
-    const {
-      user_id,
-      delivery_date,
-      habesha_cookies_quantity,
-      baklava_quantity,
-      almunium_phoil_quantity,
-      packaging_type,
-      special_instructions,
-      total_price,
-    } = orderData;
+// ========================= CREATE ORDER (WITH ADDRESS) =========================
+const createOrder = async (data) => {
+  const {
+    user_id,
+    delivery_date,
+    habesha_cookies_quantity,
+    baklava_quantity,
+    almunium_phoil_quantity
+,
+    packaging_type,
+    special_instructions,
+    order_status,
+    total_price,
+    address,
+  } = data;
 
-    // 1️⃣ Insert Order
-    const orderSql = `
-      INSERT INTO orders (
-        user_id, delivery_date, habesha_cookies_quantity, baklava_quantity,
-        almunium_phoil_quantity, packaging_type, special_instructions, total_price
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+  const orderSql = `
+    INSERT INTO orders (
+      user_id, delivery_date, habesha_cookies_quantity, baklava_quantity,
+      almunium_phoil_quantity, packaging_type, special_instructions,
+      order_status, total_price
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
 
-    const [orderResult] = await db.query(orderSql, [
-      user_id,
-      delivery_date,
-      habesha_cookies_quantity,
-      baklava_quantity,
-      almunium_phoil_quantity,
-      packaging_type,
-      special_instructions,
-      total_price,
-    ]);
+  const orderResult = await db.query(orderSql, [
+    user_id,
+    delivery_date,
+    habesha_cookies_quantity || 0,
+    baklava_quantity || 0,
+    almunium_phoil_quantity || 0,
+    packaging_type || "small",
+    special_instructions || null,
+    order_status || "Pending",
+    total_price || 0,
+  ]);
 
-    const orderId = orderResult.insertId;
+  const order_id = orderResult.insertId;
 
-    // 2️⃣ Insert Address
-    const {
-      first_name,
-      last_name,
-      phone,
-      email,
-      address,
-      address_2,
-      city,
-      state,
-      zip_code,
-      shipping_option,
-    } = addressData;
-
+  // ✅ Insert address if provided
+  if (address && address.first_name && address.last_name) {
     const addressSql = `
       INSERT INTO addresses (
         order_id, first_name, last_name, phone, email,
         address, address_2, city, state, zip_code, shipping_option
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
     await db.query(addressSql, [
-      orderId,
-      first_name,
-      last_name,
-      phone,
-      email,
-      address,
-      address_2,
-      city,
-      state,
-      zip_code,
-      shipping_option,
+      order_id,
+      address.first_name,
+      address.last_name,
+      address.phone,
+      address.email,
+      address.address,
+      address.address_2 || null,
+      address.city,
+      address.state,
+      address.zip_code,
+      address.shipping_option || null,
     ]);
-
-    return { message: "✅ Order created successfully", orderId };
-  } catch (error) {
-    console.error("❌ createOrder Error:", error);
-    throw new Error("Failed to create order");
   }
-}
 
-// ============================================================
-// 🟨 GET ALL ORDERS
-// ============================================================
-async function getAllOrders() {
-  try {
-    const sql = `
-      SELECT 
-        o.order_id,
-        o.user_id,
-        o.order_status,
-        o.delivery_date,
-        o.habesha_cookies_quantity,
-        o.baklava_quantity,
-        o.almunium_phoil_quantity,
-        o.packaging_type,
-        o.special_instructions,
-        o.total_price,
-        o.created_at,
-        o.updated_at,
-        a.first_name,
-        a.last_name,
-        a.phone,
-        a.email,
-        a.address,
-        a.address_2,
-        a.city,
-        a.state,
-        a.zip_code,
-        a.shipping_option
-      FROM orders o
-      LEFT JOIN addresses a ON o.order_id = a.order_id
-      ORDER BY o.created_at DESC
-    `;
+  return { order_id, ...data };
+};
 
-    const rows = await db.query(sql);
-    return rows;
-  } catch (error) {
-    console.error("❌ getAllOrders Error:", error);
-    throw new Error("Failed to fetch orders");
-  }
-}
+// ========================= GET ALL ORDERS (JOIN USER + ADDRESS) =========================
+const getAllOrders = async () => {
+  const sql = `
+    SELECT 
+      o.*, 
+      u.user_firstName, u.user_lastName, u.user_email,
+      a.first_name AS address_firstName, a.last_name AS address_lastName,
+      a.phone, a.email AS address_email, a.address, a.city, a.state, a.zip_code
+    FROM orders o
+    LEFT JOIN users u ON o.user_id = u.user_id
+    LEFT JOIN addresses a ON o.order_id = a.order_id
+    ORDER BY o.created_at DESC
+  `;
+  const rows = await db.query(sql);
+  return rows;
+};
 
-// ============================================================
-// 🟦 GET ORDER BY ID
-// ============================================================
-async function getOrderById(orderId) {
-  try {
-    const sql = `
-      SELECT 
-        o.order_id,
-        o.user_id,
-        o.order_status,
-        o.delivery_date,
-        o.habesha_cookies_quantity,
-        o.baklava_quantity,
-        o.almunium_phoil_quantity,
-        o.packaging_type,
-        o.special_instructions,
-        o.total_price,
-        o.created_at,
-        o.updated_at,
-        a.first_name,
-        a.last_name,
-        a.phone,
-        a.email,
-        a.address,
-        a.address_2,
-        a.city,
-        a.state,
-        a.zip_code,
-        a.shipping_option
-      FROM orders o
-      LEFT JOIN addresses a ON o.order_id = a.order_id
-      WHERE o.order_id = ?
-    `;
+// ========================= GET ORDER BY ID =========================
+const getOrderById = async (id) => {
+  const sql = `
+    SELECT 
+      o.*, 
+      u.user_firstName, u.user_lastName, u.user_email,
+      a.first_name AS address_firstName, a.last_name AS address_lastName,
+      a.phone, a.email AS address_email, a.address, a.city, a.state, a.zip_code
+    FROM orders o
+    LEFT JOIN users u ON o.user_id = u.user_id
+    LEFT JOIN addresses a ON o.order_id = a.order_id
+    WHERE o.order_id = ?
+  `;
+  const rows = await db.query(sql, [id]);
+  return rows[0];
+};
 
-    const [rows] = await db.query(sql, [orderId]);
-    return rows[0] || null;
-  } catch (error) {
-    console.error("❌ getOrderById Error:", error);
-    throw new Error("Failed to fetch order");
-  }
-}
+// ========================= UPDATE ORDER (AND ADDRESS IF PRESENT) =========================
+const updateOrder = async (id, data) => {
+  const {
+    delivery_date,
+    habesha_cookies_quantity,
+    baklava_quantity,
+    almunium_phoil_quantity,
+    packaging_type,
+    special_instructions,
+    order_status,
+    total_price,
+    address,
+  } = data;
 
-// ============================================================
-// 🟧 UPDATE ORDER STATUS
-// ============================================================
-async function updateOrderStatus(orderId, status) {
-  try {
-    if (!orderId || !status) {
-      throw new Error("Order ID or Status is missing");
+  const sql = `
+    UPDATE orders
+    SET delivery_date = ?, habesha_cookies_quantity = ?, baklava_quantity = ?,
+       almunium_phoil_quantity = ?, packaging_type = ?, special_instructions = ?,
+        order_status = ?, total_price = ?
+    WHERE order_id = ?
+  `;
+
+  await db.query(sql, [
+    delivery_date,
+    habesha_cookies_quantity,
+    baklava_quantity,
+    almunium_phoil_quantity,
+    packaging_type,
+    special_instructions,
+    order_status,
+    total_price,
+    id,
+  ]);
+
+  // ✅ Update address if provided
+  if (address && address.first_name && address.last_name) {
+    const check = await db.query(`SELECT * FROM addresses WHERE order_id = ?`, [id]);
+    if (check[0].length > 0) {
+      const updateSql = `
+        UPDATE addresses
+        SET first_name = ?, last_name = ?, phone = ?, email = ?,
+            address = ?, address_2 = ?, city = ?, state = ?, zip_code = ?, shipping_option = ?
+        WHERE order_id = ?
+      `;
+      await db.query(updateSql, [
+        address.first_name,
+        address.last_name,
+        address.phone,
+        address.email,
+        address.address,
+        address.address_2,
+        address.city,
+        address.state,
+        address.zip_code,
+        address.shipping_option,
+        id,
+      ]);
+    } else {
+      // If no existing address, create new
+      const insertSql = `
+        INSERT INTO addresses (
+          order_id, first_name, last_name, phone, email,
+          address, address_2, city, state, zip_code, shipping_option
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      await db.query(insertSql, [
+        id,
+        address.first_name,
+        address.last_name,
+        address.phone,
+        address.email,
+        address.address,
+        address.address_2,
+        address.city,
+        address.state,
+        address.zip_code,
+        address.shipping_option,
+      ]);
     }
-
-    const validStatuses = ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Cancelled"];
-    if (!validStatuses.includes(status)) {
-      throw new Error("Invalid order status value");
-    }
-
-    const result = await db.query(
-      `UPDATE orders SET order_status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?`,
-      [status, orderId]
-    );
-
-    if (result.affectedRows === 0) {
-      throw new Error(`Order with ID ${orderId} not found`);
-    }
-
-    // Return updated order info
-    const [rows] = await db.query(
-      `SELECT order_id, order_status, updated_at FROM orders WHERE order_id = ?`,
-      [orderId]
-    );
-
-    return {
-      message: "✅ Order status updated successfully",
-      updatedOrder: rows[0],
-    };
-  } catch (error) {
-    console.error("❌ updateOrderStatus Error:", error.message);
-    throw new Error("Failed to update order status");
   }
-}
 
-// ============================================================
-// 🟥 DELETE ORDER
-// ============================================================
-async function deleteOrder(orderId) {
-  try {
-    // Delete address first (foreign key dependency)
-    await db.query(`DELETE FROM addresses WHERE order_id = ?`, [orderId]);
+  return { order_id: id, ...data };
+};
 
-    // Delete the order
-    const [result] = await db.query(`DELETE FROM orders WHERE order_id = ?`, [orderId]);
+// ========================= UPDATE ONLY STATUS =========================
+const updateOrderStatus = async (orderId, status) => {
+  const sql = `UPDATE orders SET order_status = ? WHERE order_id = ?`;
+  await db.query(sql, [status, orderId]);
+  return { order_id: orderId, status };
+};
 
-    if (result.affectedRows === 0) {
-      throw new Error("Order not found");
-    }
+// ========================= DELETE ORDER (AND ADDRESS CASCADE) =========================
+const deleteOrder = async (id) => {
+  await db.query(`DELETE FROM orders WHERE order_id = ?`, [id]);
+  // Addresses are deleted automatically via ON DELETE CASCADE
+  return { message: "✅ Order deleted successfully" };
+};
 
-    return { message: "🗑️ Order deleted successfully" };
-  } catch (error) {
-    console.error("❌ deleteOrder Error:", error);
-    throw new Error("Failed to delete order");
-  }
-}
-
-// ============================================================
-// ✅ EXPORT FUNCTIONS
-// ============================================================
 module.exports = {
   createOrder,
   getAllOrders,
   getOrderById,
+  updateOrder,
   updateOrderStatus,
   deleteOrder,
 };

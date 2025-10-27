@@ -1,36 +1,41 @@
-const mysql2 = require("mysql2/promise");
+// backend/config/db.js
+const mysql = require("mysql2/promise");
 require("dotenv").config();
 
-let dbConnection;
+let pool;
 
 try {
-  dbConnection = mysql2.createPool({
+  pool = mysql.createPool({
+    host: process.env.DB_HOST,
     user: process.env.DB_USER,
     database: process.env.DATABASE,
-    host: process.env.DB_HOST,
     password: process.env.DB_PASSWORD,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
   });
-
   console.log("✅ Database pool created successfully");
 } catch (error) {
   console.error("❌ Failed to create DB connection pool:", error.message);
+  process.exit(1);
 }
 
+/**
+ * Runs an SQL query with parameters and returns the rows.
+ * @param {string} sql - The SQL query string.
+ * @param {Array} params - The parameters to use in the query.
+ * @returns {Promise<Array>} - The result rows.
+ */
 async function query(sql, params) {
   console.log("🟡 Running SQL:", sql, params);
   try {
-    const [rows] = await dbConnection.execute(sql, params);
+    const [rows] = await pool.execute(sql, params);
     console.log("🟢 Query success");
     return rows;
   } catch (error) {
-    console.error("❌ DB Query Error:", error);
+    console.error("❌ DB Query Error:", error.message);
     throw error;
   }
 }
 
-
-
-module.exports = { query };
+module.exports = { pool, query };

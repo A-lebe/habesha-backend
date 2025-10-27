@@ -1,43 +1,89 @@
-const db = require("../DBConfig/DBconfig");
+const db = require("../dbconfig/DBconfig");
 
-// Find user by email
+/**
+ * 🔹 Find a user by their email address.
+ * @param {string} email
+ * @returns {object|null} User record or null if not found
+ */
 const findUserByEmail = async (email) => {
-  const rows = await db.query("SELECT * FROM users WHERE user_email = ?", [
-    email,
-  ]);
-  return rows[0];
+  try {
+    const rows = await db.query(
+      "SELECT * FROM users WHERE user_email = ? LIMIT 1",
+      [email]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    console.error("❌ Error finding user by email:", error);
+    throw error;
+  }
 };
 
-// Save reset token
+/**
+ * 🔹 Save a password reset token in the database.
+ * @param {string} email
+ * @param {string} hashedToken
+ */
 const saveResetToken = async (email, hashedToken) => {
-  await db.query(
-    "INSERT INTO password_resets (user_email, reset_token) VALUES (?, ?)",
-    [email, hashedToken]
-  );
+  try {
+    await db.query(
+      "INSERT INTO password_resets (user_email, reset_token) VALUES (?, ?)",
+      [email, hashedToken]
+    );
+  } catch (error) {
+    console.error("❌ Error saving reset token:", error);
+    throw error;
+  }
 };
 
-// Find reset entry by token
+/**
+ * 🔹 Find the most recent password reset entry by token.
+ * @param {string} hashedToken
+ * @returns {object|null} Password reset entry or null
+ */
 const findResetByToken = async (hashedToken) => {
-  const rows = await db.query(
-    "SELECT * FROM password_resets WHERE reset_token = ? ORDER BY created_at DESC LIMIT 1",
-    [hashedToken]
-  );
-  return rows[0];
+  try {
+    const rows = await db.query(
+      "SELECT * FROM password_resets WHERE reset_token = ? ORDER BY created_at DESC LIMIT 1",
+      [hashedToken]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    console.error("❌ Error finding reset by token:", error);
+    throw error;
+  }
 };
 
-// Update user password
+/**
+ * 🔹 Update the user's password with a new hashed password.
+ * @param {string} email
+ * @param {string} hashedPassword
+ */
 const updateUserPassword = async (email, hashedPassword) => {
-  await db.query("UPDATE users SET user_password = ? WHERE user_email = ?", [
-    hashedPassword,
-    email,
-  ]);
+  try {
+    await db.query(
+      "UPDATE users SET user_password = ? WHERE user_email = ?",
+      [hashedPassword, email]
+    );
+  } catch (error) {
+    console.error("❌ Error updating user password:", error);
+    throw error;
+  }
 };
 
-// Delete used token
+/**
+ * 🔹 Delete a used or expired password reset token.
+ * @param {string} hashedToken
+ */
 const deleteToken = async (hashedToken) => {
-  await db.query("DELETE FROM password_resets WHERE reset_token = ?", [
-    hashedToken,
-  ]);
+  try {
+    await db.query(
+      "DELETE FROM password_resets WHERE reset_token = ?",
+      [hashedToken]
+    );
+  } catch (error) {
+    console.error("❌ Error deleting reset token:", error);
+    throw error;
+  }
 };
 
 module.exports = {

@@ -1,13 +1,17 @@
+// backend/Route/user.route.js
 const express = require("express");
 const router = express.Router();
-const userController = require("../controller/user.controller");
+const userController = require("../controller/user.controller"); // ✅ Make sure path is correct
+// Debug log to check if loginUser is a function
+console.log("🧪 loginUser type:", typeof userController.loginUser);
 
-// ✅ Correct Routes (no duplicate /users)
-router.post("/users", userController.registerUser);
+// Register and login
+router.post("/users/register", userController.registerUser);
+// router.post("/login", userController.loginUser);
 
-router.post("/login", userController.loginUser);
-router.get("/", userController.getAllUsers);
-router.put("/:id", userController.updateUser);
-router.delete("/:id", userController.deleteUser);
+// CRUD
+router.get("/users", userController.getAllUsers);
+router.put("/users/:id", userController.updateUser);
+router.delete("/users/:id", userController.deleteUser);
 
 module.exports = router;

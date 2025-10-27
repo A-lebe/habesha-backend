@@ -1,31 +1,32 @@
-const bcrypt = require("bcrypt");
+// backend/controller/register.controller.js
+const bcrypt = require("bcryptjs");
 const userService = require("../services/user.services");
 
-// Create a new user
+// Create new user
 async function createUser(req, res) {
   try {
-    const {userName, firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password } = req.body;
 
     const userExists = await userService.findUserByEmail(email);
     if (userExists) {
       return res.status(400).json({ error: "User already exists" });
     }
-    
 
     const hashedPassword = await bcrypt.hash(password, 12);
-    const userId = await userService.createUser(userName,firstName, lastName, email, hashedPassword);
+    const newUser = await userService.createUser(firstName, lastName, email, hashedPassword);
 
     return res.status(201).json({
       status: "success",
       message: "User registered successfully",
-      userId,
+      data: newUser,
     });
   } catch (err) {
     console.error("Error creating user:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 }
 
+// Get user by ID
 async function getUserById(req, res) {
   try {
     const user = await userService.getUserById(req.params.id);
@@ -37,6 +38,7 @@ async function getUserById(req, res) {
   }
 }
 
+// Get all users
 async function getAllUsers(req, res) {
   try {
     const users = await userService.getAllUsers();
@@ -47,12 +49,15 @@ async function getAllUsers(req, res) {
   }
 }
 
+// Update user
 async function updateUser(req, res) {
   try {
     const { firstName, lastName, email } = req.body;
     const updated = await userService.updateUser(req.params.id, firstName, lastName, email);
 
-    if (updated.affectedRows === 0) return res.status(404).json({ error: "User not found" });
+    if (updated.affectedRows === 0)
+      return res.status(404).json({ error: "User not found" });
+
     res.status(200).json({ status: "success", message: "User updated successfully" });
   } catch (err) {
     console.error("Error updating user:", err);
@@ -60,10 +65,13 @@ async function updateUser(req, res) {
   }
 }
 
+// Delete user
 async function deleteUser(req, res) {
   try {
     const deleted = await userService.deleteUser(req.params.id);
-    if (deleted.affectedRows === 0) return res.status(404).json({ error: "User not found" });
+    if (deleted.affectedRows === 0)
+      return res.status(404).json({ error: "User not found" });
+
     res.status(200).json({ status: "success", message: "User deleted successfully" });
   } catch (err) {
     console.error("Error deleting user:", err);
@@ -71,6 +79,7 @@ async function deleteUser(req, res) {
   }
 }
 
+// Get roles
 async function getRoles(req, res) {
   try {
     const roles = await userService.getAllRoles();
